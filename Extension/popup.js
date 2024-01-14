@@ -1,15 +1,21 @@
 async function urlRequest(url){
-  const response = await fetch(url);
+  var newUrl = url + "?per_page=100>"
+  const response = await fetch(newUrl);
+  // console.log(response);
+  // console.log(response.headers);
   const responseJson = await response.json();
   return responseJson;
 }
 
 async function downloadFile(url, filePath) {
+  console.log("URL");
+  console.log(url);
+
   const responseJson = await urlRequest(url);
   // console.log("JObj");
   // console.log(responseJson);
 
-  var fullFileName = filePath + responseJson.filename;
+  var fullFileName = filePath + "/" + responseJson.filename;
   fullFileName = fullFileName.replace(":", "");
 
   console.log("Full Name");
@@ -24,7 +30,25 @@ async function downloadFile(url, filePath) {
 }
 
 async function downloadModule(moduleJson, runningFilePath){
+  // console.log(j);
+  var itemsURL = moduleJson["items_url"];
+  // console.log(itemsURL);
+  items = (await getItems(itemsURL));
+  itemTypes = (await getItemTypes(itemsURL));
+  // items[i][j] = items[i][j]['type']; 
 
+
+  console.log(moduleJson);
+  console.log(items);
+  console.log(itemTypes);
+  for(let k = 0; k < items.length; k++){
+    if(itemTypes[k] == 'File'){
+      var fileStr = runningFilePath
+      console.log(fileStr);
+      var res = await downloadFile(items[k]['url'], fileStr);
+    }
+  }
+  // downloadItem();
 }
 
 async function downloadClass(classId, runningFilePath){
@@ -34,21 +58,76 @@ async function downloadClass(classId, runningFilePath){
 
   var modulesArray = await getModules(ulrOrigin, classId);
 
-  // console.log(modulesArray);
+  console.log(modulesArray);
 
   for(let j = 0; j < modulesArray.length; j++){
-    console.log(modulesArray[i]);
-    // downloadModule();
+    // console.log(modulesArray[j]);
+    var res = await downloadModule(modulesArray[j], runningFilePath + "/" + modulesArray[j]['name']);
   }
 
 }
 
+async function downloadHTML(htmlString, runningFilePath){
+  console.log(htmlString);
+  if(htmlString == null || htmlString.length < 5){
+    console.log("Too Small For File!");
+    return;
+  }else{
+    nextIndex = htmlString.indexOf("https://canvas.wpi.edu/api/v1/courses");
+    while(nextIndex != -1){
+      console.log(htmlString);
+      console.log(nextIndex);
+      
+      var wrapInd = htmlString.indexOf("wrap");
+      console.log(wrapInd);
+
+      var endLinkIndex = htmlString.substring(nextIndex).indexOf('"') + nextIndex;
+      var linkStr = htmlString.substring(nextIndex, endLinkIndex);
+      console.log(linkStr);
+
+      // if(wrapInd < 50){
+        // if(false){
+        //Download
+        // var endLinkIndex = htmlString.indexOf('"');
+        // var linkStr = htmlString.substring(nextIndex, endLinkIndex);
+        // console.log(linkStr);
+        var res = await downloadFile(linkStr, runningFilePath);
+        console.log("WW")
+      // }else{
+        // console.log("LL");
+      // }
+
+      // Reduce String
+      htmlString = htmlString.substring(nextIndex + 1); //Add any number as to not repeat
+      console.log(htmlString);
+      nextIndex = htmlString.indexOf("https://canvas.wpi.edu/api/v1/courses"); 
+      // nextIndex = -1;
+    }
+    
+  }
+  
+}
+
+async function downloadAssignmnet(assignmentJson, runningFilePath){
+  var res = await downloadHTML(assignmentJson['description'], runningFilePath + "/" + assignmentJson['name']);
+}
+
+async function downloadFolder(folderJson, runningFilePath){
+  console.log(folderJson);
+  var filesArray = await urlRequest(folderJson['files_url']);
+  console.log(filesArrayes);
+  for(let i = 0; i < filesArray.length; i++){
+    var fileUrl = "https://canvas.wpi.edu/api/v1/files/" + filesArray[i]['id'];
+    // var res = await downloadFile(fileUrl, folderJson
+  }
+}
 
 async function deafultDownload(){
   console.log("Here");
   // var url = "https://canvas.wpi.edu/api/v1/courses"
   var ulrOrigin = "https://canvas.wpi.edu";
 
+  /*
   var url = ulrOrigin + "/api/v1/dashboard/dashboard_cards"
   var activeClasses = await urlRequest(url);
   console.log(activeClasses);
@@ -56,18 +135,102 @@ async function deafultDownload(){
   var activeClassIds = new Array(activeClasses.length);
 
   for(let i = 0; i < activeClassIds.length; i++){
-    if(i == 2){
+    // if(i == 2){
       activeClassIds[i] = activeClasses[i]["id"];
 
       runningFilePath = "Term " + activeClasses[i]['term'] + "/" + activeClasses[i]['shortName']
   
-      downloadClass(activeClassIds[i], runningFilePath);
+      var res = await downloadClass(activeClassIds[i], runningFilePath);
   
-    }
+    // }
   }
 
-  // console.log(activeClassIds);
+  
 
+  //*/
+
+
+  
+  /*
+  //Class Modules
+  var courseId = 37300;
+  var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
+  const responseJson = await urlRequest(corseRequestURL); 
+
+  console.log(responseJson);
+
+  runningFilePath = responseJson['name']
+  
+  var res = await downloadClass(courseId, runningFilePath); 
+
+  // console.log(activeClassIds);
+  //*/
+
+
+  // url = "https://canvas.wpi.edu/api/v1/courses/52592/folders";
+  // url = "https://canvas.wpi.edu/api/v1/folders/713365/folders";
+  // var res = await urlRequest(url);
+  // console.log(res);
+
+  //Folders
+  /*
+  var courseId = 52592;
+  var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
+  const responseJson = await urlRequest(corseRequestURL); 
+  console.log(responseJson);
+
+  var url = ulrOrigin + "/api/v1/courses/" + courseId + "/folders";
+  const foldersArray = await urlRequest(url);
+
+  console.log(foldersArray);
+
+  for(let i = 0; i < foldersArray.length; i++){ 
+    // console.log(filesArray[i]['url']);
+    // var fileUrl = "https://canvas.wpi.edu/api/v1/files/" + filesArray[i]['id'];
+
+    var res = await downloadFolder(foldersArray[i], responseJson['name']);
+  }
+  //*/
+
+
+  /*
+  //Files
+  var courseId = 52592;
+  var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
+  const responseJson = await urlRequest(corseRequestURL); 
+  console.log(responseJson);
+
+  var url = ulrOrigin + "/api/v1/courses/" + courseId + "/files";
+  const filesArray = await urlRequest(url);
+
+  console.log(filesArray);
+
+  for(let i = 0; i < filesArray.length; i++){
+    console.log(filesArray[i]['url']);
+    var fileUrl = "https://canvas.wpi.edu/api/v1/files/" + filesArray[i]['id'];
+
+    var res = await downloadFile(fileUrl, responseJson['name'] + "/" + "Files");
+  }
+  //*/
+
+  /*
+  //Assignmets
+  var courseId = 52592;
+  var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
+  const responseJson = await urlRequest(corseRequestURL); 
+  console.log(responseJson);
+
+  var url = ulrOrigin + "/api/v1/courses/" + courseId + "/assignments";
+  const assignmentsArray = await urlRequest(url);
+
+  console.log(assignmentsArray);
+
+  for(let i = 0; i < assignmentsArray.length; i++){
+    // console.log(assignmentsArray[i]['url']);
+    // downloadFile(filesArray[i]['url'], responseJson['name'] + "/" + "Files");
+    var res = await downloadAssignmnet(assignmentsArray[i], responseJson['name'] + "/" + "Assignments")
+  }
+  //*/
 
 
   /*/ 
@@ -121,6 +284,7 @@ async function deafultDownload(){
 
 
   // downloadFile("https://canvas.wpi.edu/api/v1/files/6240223");
+
 }
 
 
