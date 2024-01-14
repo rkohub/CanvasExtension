@@ -6,6 +6,8 @@ async function urlRequest(url){
   const responseJson = await response.json();
   return responseJson;
 }
+//Pages,Announcements, Discussions.
+//Clean Icon, Copy Myles HTML, Make Selectors work, Change Based on Page.
 
 async function downloadFile(url, filePath) {
   console.log("URL");
@@ -51,18 +53,49 @@ async function downloadModule(moduleJson, runningFilePath){
   // downloadItem();
 }
 
-async function downloadClass(classId, runningFilePath){
+async function downloadClass(courseId, runningFilePath){
   console.log(runningFilePath);
   //For Each Module Download it
   var ulrOrigin = "https://canvas.wpi.edu";
 
-  var modulesArray = await getModules(ulrOrigin, classId);
-
+  //Download Modules
+  var modulesArray = await getModules(ulrOrigin, courseId);
   console.log(modulesArray);
 
   for(let j = 0; j < modulesArray.length; j++){
     // console.log(modulesArray[j]);
-    var res = await downloadModule(modulesArray[j], runningFilePath + "/" + modulesArray[j]['name']);
+    var res = await downloadModule(modulesArray[j], runningFilePath + "/Modules/" + modulesArray[j]['name']);
+  }
+
+  //Download Folders/Files
+  var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
+  const responseJson = await urlRequest(corseRequestURL); 
+  console.log(responseJson);
+
+  var url = ulrOrigin + "/api/v1/courses/" + courseId + "/folders";
+  const foldersArray = await urlRequest(url);
+
+  console.log(foldersArray);
+
+  for(let i = 0; i < foldersArray.length; i++){ 
+    // console.log(filesArray[i]['url']);
+    // var fileUrl = "https://canvas.wpi.edu/api/v1/files/" + filesArray[i]['id'];
+
+    // var res = await downloadFolder(foldersArray[i], responseJson['name']);
+    var res = await downloadFolder(foldersArray[i], runningFilePath);
+  }
+
+  //Download Assignments
+  var url = ulrOrigin + "/api/v1/courses/" + courseId + "/assignments";
+  const assignmentsArray = await urlRequest(url);
+
+  console.log(assignmentsArray);
+
+  for(let i = 0; i < assignmentsArray.length; i++){
+    // console.log(assignmentsArray[i]['url']);
+    // downloadFile(filesArray[i]['url'], responseJson['name'] + "/" + "Files");
+    // var res = await downloadAssignmnet(assignmentsArray[i], responseJson['name'] + "/" + "Assignments")
+    var res = await downloadAssignmnet(assignmentsArray[i], runningFilePath + "/" + "Assignments")
   }
 
 }
@@ -115,10 +148,10 @@ async function downloadAssignmnet(assignmentJson, runningFilePath){
 async function downloadFolder(folderJson, runningFilePath){
   console.log(folderJson);
   var filesArray = await urlRequest(folderJson['files_url']);
-  console.log(filesArrayes);
+  console.log(filesArray);
   for(let i = 0; i < filesArray.length; i++){
     var fileUrl = "https://canvas.wpi.edu/api/v1/files/" + filesArray[i]['id'];
-    // var res = await downloadFile(fileUrl, folderJson
+    var res = await downloadFile(fileUrl, runningFilePath + "/" + folderJson['full_name'])
   }
 }
 
@@ -145,15 +178,14 @@ async function deafultDownload(){
     // }
   }
 
-  
+  // var res = await downloadClass(activeClassIds[i], runningFilePath);
 
   //*/
-
-
   
   /*
-  //Class Modules
+  //Class All Parts
   var courseId = 37300;
+  // var courseId = 52592;
   var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
   const responseJson = await urlRequest(corseRequestURL); 
 
@@ -172,8 +204,8 @@ async function deafultDownload(){
   // var res = await urlRequest(url);
   // console.log(res);
 
-  //Folders
   /*
+  //Folders
   var courseId = 52592;
   var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
   const responseJson = await urlRequest(corseRequestURL); 
@@ -190,7 +222,6 @@ async function deafultDownload(){
 
     var res = await downloadFolder(foldersArray[i], responseJson['name']);
   }
-  //*/
 
 
   /*
@@ -232,8 +263,35 @@ async function deafultDownload(){
   }
   //*/
 
+  // /*
+  //Pages. Cant Find Body
+  var courseId = 53124;
+  var corseRequestURL = ulrOrigin + "/api/v1/courses/" + courseId;
+  const responseJson = await urlRequest(corseRequestURL); 
+  console.log(responseJson);
+
+  var url = ulrOrigin + "/api/v1/courses/" + courseId + "/pages";
+  const pagesArray = await urlRequest(url);
+
+  console.log(pagesArray);
+
+  for(let i = 0; i < pagesArray.length; i++){
+    console.log(pagesArray[i]);
+    var pageStr = pagesArray[i]['page_id'];
+    // pageStr = pageStr.replace(" ", "-");
+    var fileUrl = "https://canvas.wpi.edu/api/v1/courses/" + courseId + "/pages/" + pageStr;
+    console.log(fileUrl);
+    const responseJson = await urlRequest(fileUrl); 
+    console.log(responseJson['body']);
+
+    var res = await downloadHTML(responseJson['body'], "Pages/" + responseJson['title']);
+    // downloadFile(filesArray[i]['url'], responseJson['name'] + "/" + "Files");
+    // var res = await downloadAssignmnet(assignmentsArray[i], responseJson['name'] + "/" + "Assignments")
+  }
+  //*/
 
   /*/ 
+
   //Class = i
   //Module = j
   //Module Entery = k
@@ -327,7 +385,7 @@ async function getItemTypes(moduleUrl){
 
 window.onload=function(){
   // document.getElementById("myButton").addEventListener("click", testing);
-  document.getElementById("myButton").addEventListener("click", deafultDownload);
+  document.getElementById("download-button").addEventListener("click", deafultDownload);
 }  
 
 
